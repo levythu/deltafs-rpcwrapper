@@ -19,16 +19,20 @@ OPT ?= -g2
 #-----------------------------------------------
 
 OUTDIR=build
+THRIFTDIR=include/if
+
+THRIFT_DIR := /usr/local/include/thrift
+BOOST_DIR := /usr/local/include
 
 LFLAGS=
-IFLAGS=
+IFLAGS= -I$(THRIFT_DIR) -I$(BOOST_DIR)
 ifdef PREFIX
 	LFLAGS += -L$(PREFIX)/lib
 	IFLAGS += -I$(PREFIX)/include
 endif
 
 CFLAGS = -I./include $(OPT) $(IFLAGS)
-CXXFLAGS = -std=c++1y -I./include $(OPT) $(IFLAGS)
+CXXFLAGS = -std=c++1y -I./include .I./$(THRIFTDIR)/gen-cpp $(OPT) $(IFLAGS)
 CXX=g++
 CC=gcc
 
@@ -48,8 +52,13 @@ $(OUTDIR)/src: | $(OUTDIR)
 .PHONY: DIRS
 DIRS: $(OUTDIR)/src
 
-$(OUTDIR)/rpcserver: DIRS $(OUTDIR)/src/main.o
-	$(CXX) $(LFLAGS) -pthread $(OUTDIR)/src/main.o -o $@ -lglog -ldeltafs -ldeltafs-common
+GENCPP=$(wildcard $(THRIFTDIR)/gen-cpp/*.cpp)
+
+$(OUTDIR)/rpcserver: DIRS $(OUTDIR)/src/main.o $(GENCPP)
+	$(CXX) $(LFLAGS) -pthread $(OUTDIR)/src/main.o $(GENCPP) -o $@ -lglog -ldeltafs -ldeltafs-common -lthrift
+
+$(THRIFTDIR)/gen-cpp/%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OUTDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@
