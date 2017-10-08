@@ -32,7 +32,7 @@ ifdef PREFIX
 endif
 
 CFLAGS = -I./include $(OPT) $(IFLAGS)
-CXXFLAGS = -std=c++1y -I./include .I./$(THRIFTDIR)/gen-cpp $(OPT) $(IFLAGS)
+CXXFLAGS = -std=c++1y -I./include -I./$(THRIFTDIR)/gen-cpp $(OPT) $(IFLAGS)
 CXX=g++
 CC=gcc
 
