@@ -2,9 +2,12 @@
 #include <map>
 
 #include <glog/logging.h>
+#include <gflags/gflags.h>
 #include <deltafs/deltafs_api.h>
 
 #include "DeltaFSKVStore.h"
+#include "flags.h"
+
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/server/TSimpleServer.h>
 #include <thrift/transport/TServerSocket.h>
@@ -45,14 +48,19 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
     if (dirHandleMap_.find(mdName) == dirHandleMap_.end()) {
       throw err("MdName must be in the valid set.");
     }
-    printf("append\n");
+    auto rc = deltafs_plfsdir_append(dirHandleMap_.at(mdName), key.c_str(), -1,
+        value.c_str(), value.length());
+    if (rc < 0) {
+      throw err("deltafs_plfsdir_append returns -1");
+    }
+    LOG(INFO) << "Appended " << value << "to " << mdName << "/" << key;
   }
 
   void get(std::string& _return, const std::string& mdName, const std::string& key) {
     if (dirHandleMap_.find(mdName) == dirHandleMap_.end()) {
       throw err("MdName must be in the valid set.");
     }
-    printf("get\n");
+    _return = "hmmmm";
   }
 };
 
@@ -72,11 +80,12 @@ openDirectory(const std::string& dirName, const bool readMode) {
 }
 
 int main(int argc, char **argv) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   initLogging();
   std::set<std::string> validMdName {"traces", "services"};
   std::map<std::string, deltafs_plfsdir_t*> dirHandleMap;
   for (const auto& name : validMdName) {
-    dirHandleMap[name] = openDirectory(name, false);
+    dirHandleMap[name] = openDirectory(name, FLAGS_readMode);
   }
 
   auto workerCount = 20;

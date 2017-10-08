@@ -54,8 +54,8 @@ DIRS: $(OUTDIR)/src
 
 GENCPP=$(wildcard $(THRIFTDIR)/gen-cpp/*.cpp)
 
-$(OUTDIR)/rpcserver: DIRS $(OUTDIR)/src/main.o $(GENCPP)
-	$(CXX) $(LFLAGS) -pthread $(OUTDIR)/src/main.o $(GENCPP) -o $@ -lglog -ldeltafs -ldeltafs-common -lthrift
+$(OUTDIR)/rpcserver: DIRS $(OUTDIR)/src/main.o $(OUTDIR)/src/flags.o $(GENCPP)
+	$(CXX) $(LFLAGS) -pthread $(OUTDIR)/src/main.o $(OUTDIR)/src/flags.o $(GENCPP) -o $@ -lglog -ldeltafs -ldeltafs-common -lthrift -lgflags
 
 $(THRIFTDIR)/gen-cpp/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
