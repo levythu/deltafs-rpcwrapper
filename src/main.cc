@@ -45,6 +45,8 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
   void append(const std::string& mdName,
               const std::string& key,
               const std::string& value) {
+    LOG(INFO) << "Request: append. mdName=" << mdName
+              << ", key=" << key << ", value=" << value;
     if (dirHandleMap_.find(mdName) == dirHandleMap_.end()) {
       throw err("MdName must be in the valid set.");
     }
@@ -57,10 +59,16 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
   }
 
   void get(std::string& _return, const std::string& mdName, const std::string& key) {
+    LOG(INFO) << "Request: get. mdName=" << mdName
+              << ", key=" << key;
     if (dirHandleMap_.find(mdName) == dirHandleMap_.end()) {
       throw err("MdName must be in the valid set.");
     }
-    _return = "hmmmm";
+    size_t valLen;
+    auto charStr = deltafs_plfsdir_get(dirHandleMap_.at(mdName), key.c_str(),
+        key.length(), &valLen, NULL, NULL);
+    _return = std::string(charStr, valLen);
+    LOG(INFO) << "GET: " << mdName << "/" << key << "=" << _return;
   }
 };
 
