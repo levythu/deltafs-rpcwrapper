@@ -79,6 +79,9 @@ void initLogging() {
 
 deltafs_plfsdir_t*
 openDirectory(const std::string& dirName, const bool readMode) {
+  if (FLAGS_conversion) {
+    // TODO
+  }
   auto dirHandler = deltafs_plfsdir_create_handle("rank=0",
       readMode ? O_RDONLY : O_WRONLY);
   auto dirAbsName = std::string("/tmp/") + dirName;
