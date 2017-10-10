@@ -41,14 +41,15 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
   struct MdCache {
     std::set<std::string> allVal;
     std::set<std::string> valToFlush;
-  }
+  };
+
  private:
   const std::map<std::string, deltafs_plfsdir_t*>& dirHandleMap_;
 
    // MdName, key -> value
   std::map<std::pair<std::string, std::string>, MdCache> cache_;
   std::mutex cacheLock;
-  std::atomic<bool> stopFlush = false;
+  std::atomic<bool> stopFlush;
   std::thread flushThread;
 
   static OperationFailure err(const std::string& reason) {
@@ -62,7 +63,9 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
         dirHandleMap_(dirHandleMap) {
     if (!FLAGS_readMode) {
       stopFlush = false;
-      flushThread = std::thread(onFlushTick);
+      flushThread = std::thread([&] {
+        this->onFlushTick();
+      });
     }
   }
 
@@ -83,8 +86,8 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
 
   void cacheFlush() {
     std::lock_guard<std::mutex> g(cacheLock);
-    for (const auto& kvpair : cache_) {
-      const auto& cacheVal = kvpair.second;
+    for (auto& kvpair : cache_) {
+      auto& cacheVal = kvpair.second;
       const auto& mdName = kvpair.first.first;
       const auto& key = kvpair.first.second;
       if (!cacheVal.valToFlush.empty()) {
@@ -147,7 +150,7 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
       auto cacheIter = cache_.find(std::make_pair(mdName, key));
       if (cacheIter == cache_.end()) {
         _return = "";
-        for (const auto& value : *cacheIter) {
+        for (const auto& value : cacheIter->second.allVal) {
           _return.append(value);
         }
         LOG(INFO) << "GET from Cache: " << mdName << "/" << key

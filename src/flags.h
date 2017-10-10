@@ -2,6 +2,6 @@
 #define FLAGS_H
 
 DECLARE_bool(readMode);
-DEFINE_bool(conversion);
+DECLARE_bool(conversion);
 
 #endif
