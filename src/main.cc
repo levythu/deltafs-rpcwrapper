@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <vector>
+#include <csignal>
 
 #include <glog/logging.h>
 #include <gflags/gflags.h>
@@ -190,27 +191,44 @@ void initLogging() {
 
 deltafs_plfsdir_t*
 openDirectory(const std::string& dirName, const bool readMode) {
+  auto dirAbsName = std::string("/tmp/") + dirName;
   if (FLAGS_conversion && readMode) {
     // Force converting the massive directory from write mode to read
     auto dirHandler = deltafs_plfsdir_create_handle("rank=0", O_WRONLY);
+    auto res = deltafs_plfsdir_open(dirHandler, dirAbsName.c_str());
+    LOG(INFO) << "Open directory " << dirName << ", rc = " << res
+              << "And trying to convert that into read mode";
     deltafs_plfsdir_finish(dirHandler);
     deltafs_plfsdir_free_handle(dirHandler);
   }
   auto dirHandler = deltafs_plfsdir_create_handle("rank=0",
       readMode ? O_RDONLY : O_WRONLY);
-  auto dirAbsName = std::string("/tmp/") + dirName;
   auto res = deltafs_plfsdir_open(dirHandler, dirAbsName.c_str());
   LOG(INFO) << "Open directory " << dirName << ", rc = " << res;
   return dirHandler;
 }
 
+static std::map<std::string, deltafs_plfsdir_t*> dirHandleMap;
+
+void signal_handler(int signal) {
+  if (!FLAGS_readMode) {
+    LOG(INFO) << "Flushing all md...";
+    for (const auto& name : validMdName) {
+      deltafs_plfsdir_finish(dirHandleMap[name.first]);
+      deltafs_plfsdir_free_handle(dirHandleMap[name.first]);
+    }
+  }
+  exit(0);
+}
+
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   initLogging();
-  std::map<std::string, deltafs_plfsdir_t*> dirHandleMap;
+
   for (const auto& name : validMdName) {
     dirHandleMap[name.first] = openDirectory(name.first, FLAGS_readMode);
   }
+  std::signal(SIGINT, signal_handler);
 
   //===========================================================================
 
