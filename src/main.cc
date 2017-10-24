@@ -4,6 +4,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <vector>
 
 #include <glog/logging.h>
 #include <gflags/gflags.h>
@@ -102,6 +103,17 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
                   << succ << "/" << cacheVal.valToFlush.size();
         cacheVal.valToFlush.clear();
       }
+    }
+  }
+
+  void appendBatch(const std::vector<std::string>& mdName,
+                   const std::vector<std::string>& key,
+                   const std::vector<std::string>& value) {
+    if (mdName.size() != key.size() || mdName.size() != value.size()) {
+      throw err("Batch size not equal.");
+    }
+    for (auto i = 0; i < mdName.size(); i++) {
+      append(mdName[i], key[i], value[i]);
     }
   }
 

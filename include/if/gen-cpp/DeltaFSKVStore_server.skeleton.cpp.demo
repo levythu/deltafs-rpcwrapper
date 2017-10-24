@@ -27,6 +27,11 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
     printf("append\n");
   }
 
+  void appendBatch(const std::vector<std::string> & mdName, const std::vector<std::string> & key, const std::vector<std::string> & value) {
+    // Your implementation goes here
+    printf("appendBatch\n");
+  }
+
   void get(std::string& _return, const std::string& mdName, const std::string& key) {
     // Your implementation goes here
     printf("get\n");
