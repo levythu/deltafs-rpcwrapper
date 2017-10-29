@@ -95,9 +95,9 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
       if (!cacheVal.valToFlush.empty()) {
         int succ = 0;
         for (const auto& value : cacheVal.valToFlush) {
-          auto rc = deltafs_plfsdir_append(
-              dirHandleMap_.at(mdName), key.c_str(), -1,
-              value.c_str(), value.length());
+          auto rc = deltafs_plfsdir_put(
+            dirHandleMap_.at(mdName), key.c_str(), key.length(),
+            -1, value.c_str(), value.length());
           if (rc >= 0) succ++;
         }
         LOG(INFO) << "Flushed " << mdName+"/"+key << ", success: "
@@ -139,12 +139,12 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
       }
       LOG(INFO) << "Cached " << value << "to " << mdName << "/" << key;
     } else {
-      auto rc = deltafs_plfsdir_append(dirHandleMap_.at(mdName), key.c_str(), -1,
-          value.c_str(), value.length());
+      auto rc = deltafs_plfsdir_put(dirHandleMap_.at(mdName), key.c_str(),
+          key.length(), -1, value.c_str(), value.length());
       if (rc < 0) {
         throw err("deltafs_plfsdir_append returns -1");
       }
-      LOG(INFO) << "Appended " << value << "to " << mdName << "/" << key;
+      LOG(INFO) << "Appended " << value << " to " << mdName << "/" << key;
     }
   }
 
@@ -178,7 +178,6 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
       LOG(INFO) << "GET: " << mdName << "/" << key << "not found.";
       return;
     }
-    LOG(INFO) << valLen << (uint64_t)charStr << std::string(charStr);
     _return = std::string(charStr, valLen);
     free(charStr);
     if (!_return.empty() && validMdName.at(mdName)) {
