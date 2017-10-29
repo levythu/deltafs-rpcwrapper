@@ -161,7 +161,7 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
       // Cache mode
       std::lock_guard<std::mutex> g(cacheLock);
       auto cacheIter = cache_.find(std::make_pair(mdName, key));
-      if (cacheIter == cache_.end()) {
+      if (cacheIter != cache_.end()) {
         _return = "";
         for (const auto& value : cacheIter->second.allVal) {
           _return.append(value);
@@ -174,7 +174,13 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
     size_t valLen;
     auto charStr = deltafs_plfsdir_get(dirHandleMap_.at(mdName), key.c_str(),
         key.length(), &valLen, NULL, NULL);
+    if (charStr == NULL) {
+      LOG(INFO) << "GET: " << mdName << "/" << key << "not found.";
+      return;
+    }
+    LOG(INFO) << valLen << (uint64_t)charStr << std::string(charStr);
     _return = std::string(charStr, valLen);
+    free(charStr);
     if (!_return.empty() && validMdName.at(mdName)) {
       std::lock_guard<std::mutex> g(cacheLock);
       cache_[std::make_pair(mdName, key)] = MdCache();
