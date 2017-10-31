@@ -200,6 +200,7 @@ openDirectory(const std::string& dirName, const bool readMode) {
   if (FLAGS_conversion && readMode) {
     // Force converting the massive directory from write mode to read
     auto dirHandler = deltafs_plfsdir_create_handle("rank=0", O_WRONLY);
+    deltafs_plfsdir_set_multimap(dirHandler, 1);
     auto res = deltafs_plfsdir_open(dirHandler, dirAbsName.c_str());
     LOG(INFO) << "Open directory " << dirName << ", rc = " << res
               << "And trying to convert that into read mode";
@@ -208,6 +209,7 @@ openDirectory(const std::string& dirName, const bool readMode) {
   }
   auto dirHandler = deltafs_plfsdir_create_handle("rank=0",
       readMode ? O_RDONLY : O_WRONLY);
+    deltafs_plfsdir_set_multimap(dirHandler, 1);
   auto res = deltafs_plfsdir_open(dirHandler, dirAbsName.c_str());
   LOG(INFO) << "Open directory " << dirName << ", rc = " << res;
   return dirHandler;
