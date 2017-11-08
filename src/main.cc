@@ -33,6 +33,7 @@ using boost::shared_ptr;
 using namespace ::deltafs;
 
 const int FLUSH_TICK_IN_S = 5;
+const char* DELTAFS_OPEN_CONFIG = "rank=0";
 std::map<std::string, bool> validMdName {
   {"traces", false},
   {"services", true}
@@ -171,9 +172,9 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
         return;
       }
     }
-    size_t valLen;
+    size_t valLen, seeks, tableSeeks;
     auto charStr = deltafs_plfsdir_get(dirHandleMap_.at(mdName), key.c_str(),
-        key.length(), &valLen, NULL, NULL);
+        key.length(), &valLen, &tableSeeks, &seeks);
     if (charStr == NULL) {
       LOG(INFO) << "GET: " << mdName << "/" << key << "not found.";
       return;
@@ -186,6 +187,7 @@ class DeltaFSKVStoreHandler : virtual public DeltaFSKVStoreIf {
       cache_[std::make_pair(mdName, key)].allVal.insert(_return);
     }
     LOG(INFO) << "GET: " << mdName << "/" << key << "=" << _return;
+    LOG(INFO) << "Seeks:" << tableSeeks << "/" << seeks;
   }
 };
 
@@ -199,7 +201,8 @@ openDirectory(const std::string& dirName, const bool readMode) {
   auto dirAbsName = std::string("/tmp/") + dirName;
   if (FLAGS_conversion && readMode) {
     // Force converting the massive directory from write mode to read
-    auto dirHandler = deltafs_plfsdir_create_handle("rank=0", O_WRONLY);
+    auto dirHandler = deltafs_plfsdir_create_handle(
+        DELTAFS_OPEN_CONFIG, O_WRONLY);
     deltafs_plfsdir_set_multimap(dirHandler, 1);
     auto res = deltafs_plfsdir_open(dirHandler, dirAbsName.c_str());
     LOG(INFO) << "Open directory " << dirName << ", rc = " << res
@@ -207,9 +210,9 @@ openDirectory(const std::string& dirName, const bool readMode) {
     deltafs_plfsdir_finish(dirHandler);
     deltafs_plfsdir_free_handle(dirHandler);
   }
-  auto dirHandler = deltafs_plfsdir_create_handle("rank=0",
-      readMode ? O_RDONLY : O_WRONLY);
-    deltafs_plfsdir_set_multimap(dirHandler, 1);
+  auto dirHandler = deltafs_plfsdir_create_handle(
+      DELTAFS_OPEN_CONFIG, readMode ? O_RDONLY : O_WRONLY);
+  deltafs_plfsdir_set_multimap(dirHandler, 1);
   auto res = deltafs_plfsdir_open(dirHandler, dirAbsName.c_str());
   LOG(INFO) << "Open directory " << dirName << ", rc = " << res;
   return dirHandler;
@@ -222,6 +225,14 @@ void signal_handler(int signal) {
     LOG(INFO) << "Flushing all md...";
     for (const auto& name : validMdName) {
       deltafs_plfsdir_finish(dirHandleMap[name.first]);
+      LOG(INFO) << "NumKey: "
+                << deltafs_plfsdir_get_property(dirHandleMap[name.first], "num_keys");
+      LOG(INFO) << "NumSSTABLE: "
+                << deltafs_plfsdir_get_property(dirHandleMap[name.first], "num_sstables");
+      LOG(INFO) << "DataBlocks: "
+                << deltafs_plfsdir_get_property(dirHandleMap[name.first], "num_data_blocks");
+      LOG(INFO) << "FilterBytes: "
+                << deltafs_plfsdir_get_property(dirHandleMap[name.first], "sstable_filter_bytes");
       deltafs_plfsdir_free_handle(dirHandleMap[name.first]);
     }
   }
