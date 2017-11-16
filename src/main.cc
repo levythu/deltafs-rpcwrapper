@@ -225,6 +225,7 @@ void signal_handler(int signal) {
     LOG(INFO) << "Flushing all md...";
     for (const auto& name : validMdName) {
       deltafs_plfsdir_finish(dirHandleMap[name.first]);
+      LOG(INFO) << "For directory " << name.first;
       LOG(INFO) << "NumKey: "
                 << deltafs_plfsdir_get_property(dirHandleMap[name.first], "num_keys");
       LOG(INFO) << "NumSSTABLE: "
