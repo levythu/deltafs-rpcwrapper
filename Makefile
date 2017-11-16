@@ -38,7 +38,7 @@ CC=gcc
 
 default: all
 
-all: $(OUTDIR)/rpcserver
+all: $(OUTDIR)/rpcserver $(OUTDIR)/membomb
 
 clean:
 	-rm -rf $(OUTDIR)
@@ -56,6 +56,9 @@ GENCPP=$(wildcard $(THRIFTDIR)/gen-cpp/*.cpp)
 
 $(OUTDIR)/rpcserver: DIRS $(OUTDIR)/src/main.o $(OUTDIR)/src/flags.o $(GENCPP)
 	$(CXX) $(LFLAGS) -pthread $(OUTDIR)/src/main.o $(OUTDIR)/src/flags.o $(GENCPP) -o $@ -lglog -ldeltafs -ldeltafs-common -lthrift -lgflags
+
+$(OUTDIR)/membomb: DIRS $(OUTDIR)/src/membomb.o
+	$(CXX) $(LFLAGS) -pthread $(OUTDIR)/src/membomb.o -o $@ -lglog -ldeltafs  -lgflags
 
 $(THRIFTDIR)/gen-cpp/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
